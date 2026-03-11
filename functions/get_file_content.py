@@ -1,14 +1,17 @@
 import os 
+from google.genai import types
 
 schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",
     description="Gets file contents up to a certain number of characters, in a specified directory relative to the working directory",
     parameters=types.Schema(
         type=types.Type.OBJECT,
+        required=["file_path"],
         properties={
             "file_path": types.Schema(
                 type=types.Type.STRING,
                 description="File path, relative to the working directory (default is the working directory itself)",
+                
             ),
         },
     ),
