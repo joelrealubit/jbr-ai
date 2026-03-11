@@ -1,5 +1,23 @@
 import os
 
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Writes content into a file in a specified directory relative to the working directory",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="File path, relative to the working directory (default is the working directory itself)",
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="text content to be written"
+            ),
+        },
+    ),
+)
+
 def write_file(working_directory, file_path, content):
     #1
     working_dir_abs = os.path.abspath(working_directory)
