@@ -7,7 +7,7 @@ from google.genai import types
 from prompts import system_prompt
 
 from call_function import available_functions
-
+from call_function import call_function
 
 parser = argparse.ArgumentParser(description="Chatbot")
 parser.add_argument("user_prompt", type=str, help="User prompt")
@@ -37,12 +37,23 @@ if args.verbose:
     print(f"User prompt: {args.user_prompt}")
     print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
     print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    
 
 #print(f"Response: ")
 #print(response.text)
+function_results = []
 if response.function_calls != None:
     for function_call in response.function_calls:
         print(f"Calling function: {function_call.name}({function_call.args})")
+        function_call_result = call_function(function_call)
+        if len(function_call_result.parts) == 0:
+            raise RuntimeError("Error: no function call result content parts!\n")
+        if function_call_result.parts[0].function_response == None:
+            raise RuntimeError("Error: no function response!\n")
+        function_results.append(function_call_result.parts[0].function_response)
+        if args.verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+
 else:
     print(f"Response: ")
     print(response.text)
