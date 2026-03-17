@@ -23,37 +23,55 @@ if api_key == None:
 
 client = genai.Client(api_key=api_key)
 
+max_iters = 20
 
-response = client.models.generate_content( 
-    model='gemini-2.5-flash', 
-    contents=messages, 
-    config=types.GenerateContentConfig(tools = [available_functions] ,system_instruction=system_prompt,temperature=0)
-    )
+for i in range(0,max_iters):
+    # call the model, handle responses, etc.
+    print(f"messages: {messages}\n")
 
-if response.usage_metadata == None:
-    raise RuntimeError("error getting usage_metadata!")
+    response = client.models.generate_content( 
+        model='gemini-2.5-flash', 
+        contents=messages, 
+        config=types.GenerateContentConfig(tools = [available_functions] ,system_instruction=system_prompt,temperature=0)
+        )
 
-if args.verbose:
-    print(f"User prompt: {args.user_prompt}")
-    print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-    print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    if response.usage_metadata == None:
+        raise RuntimeError("error getting usage_metadata!")
+
+    if args.verbose:
+        print(f"User prompt: {args.user_prompt}")
+        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        
+    #check candidates property
+
     
+    if response.candidates:
+        for candidate in response.candidates:
+            if candidate is None or candidate.content is None:
+                continue
+            messages.append(candidate.content)
 
-#print(f"Response: ")
-#print(response.text)
-function_results = []
-if response.function_calls != None:
-    for function_call in response.function_calls:
-        print(f"Calling function: {function_call.name}({function_call.args})")
-        function_call_result = call_function(function_call)
-        if len(function_call_result.parts) == 0:
-            raise RuntimeError("Error: no function call result content parts!\n")
-        if function_call_result.parts[0].function_response == None:
-            raise RuntimeError("Error: no function response!\n")
-        function_results.append(function_call_result.parts[0].function_response)
-        if args.verbose:
-            print(f"-> {function_call_result.parts[0].function_response.response}")
-
-else:
-    print(f"Response: ")
-    print(response.text)
+    function_results = []
+    if response.function_calls != None:
+        for function_call in response.function_calls:
+            print(f"Calling function: {function_call.name}({function_call.args})")
+            function_call_result = call_function(function_call)
+            if len(function_call_result.parts) == 0:
+                raise RuntimeError("Error: no function call result content parts!\n")
+            if function_call_result.parts[0].function_response == None:
+                raise RuntimeError("Error: no function response!\n")
+            function_results.append(function_call_result.parts[0].function_response)
+            
+            if args.verbose:
+                print(f"-> {function_call_result.parts[0].function_response.response}")    
+        
+        messages.append(types.Content(role="user", parts=function_results))
+        
+    else:
+        print(f"Response: ")
+        print(response.text)
+        break
+    if i == 19 and response == None:
+        print(f'Error: no final response received!')
+        sys.exit(1)
